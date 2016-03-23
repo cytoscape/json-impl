@@ -373,12 +373,20 @@ public class CytoscapeJsVisualStyleSerializer extends JsonSerializer<VisualStyle
 			final Object value = convert(mapping.getVisualProperty(), mappingPairs.get(key));
 			jg.writeStartObject();
 
-			String tag = vp.getIdString().toLowerCase() + "[" + colName + " = ";
-			if (colType == Integer.class || colType == Double.class || colType == Float.class || colType == Long.class) {
-				tag += key + "]";
+			String tag = "";
+			
+			// Special case: Boolean volumn handler
+			if(colType == Boolean.class) {
+				if((Boolean)key) {
+					tag = vp.getIdString().toLowerCase() + "[" + colName + "]";
+				} else {
+					tag = vp.getIdString().toLowerCase() + "[!" + colName + "]";
+				}
+			} else if (colType == Integer.class || colType == Double.class || colType == Float.class || colType == Long.class) {
+				tag = vp.getIdString().toLowerCase() + "[" + colName + " = " + key + "]";
 			} else {
 				// String
-				tag += "\'" + key + "\']";
+				tag = vp.getIdString().toLowerCase() + "[" + colName + " = \'" + key + "\']";
 			}
 			jg.writeStringField(SELECTOR.getTag(), tag);
 			jg.writeObjectFieldStart(CSS.getTag());
@@ -396,6 +404,7 @@ public class CytoscapeJsVisualStyleSerializer extends JsonSerializer<VisualStyle
 			jg.writeEndObject();
 		}
 	}
+	
 
 	/**
 	 * 

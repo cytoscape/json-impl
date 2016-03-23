@@ -1,8 +1,6 @@
 package org.cytoscape.io.internal.write.json;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -24,7 +22,6 @@ import java.util.Set;
 import org.cytoscape.application.CyVersion;
 import org.cytoscape.ding.DVisualLexicon;
 import org.cytoscape.ding.Justification;
-import org.cytoscape.ding.NetworkViewTestSupport;
 import org.cytoscape.ding.ObjectPosition;
 import org.cytoscape.ding.Position;
 import org.cytoscape.ding.customgraphics.CustomGraphicsManager;
@@ -39,7 +36,6 @@ import org.cytoscape.model.CyEdge;
 import org.cytoscape.model.CyNetwork;
 import org.cytoscape.service.util.CyServiceRegistrar;
 import org.cytoscape.view.model.CyNetworkView;
-import org.cytoscape.view.model.CyNetworkViewFactory;
 import org.cytoscape.view.model.CyNetworkViewManager;
 import org.cytoscape.view.model.VisualLexicon;
 import org.cytoscape.view.presentation.property.ArrowShapeVisualProperty;
@@ -63,7 +59,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.MockitoAnnotations;
-import org.mockito.asm.util.CheckAnnotationAdapter;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -262,6 +257,13 @@ public class CytoscapeJsVisualStyleSerializerTest extends AbstractJsonNetworkVie
 		nodeLabelPosMapping.putMapValue("protein", new ObjectPositionImpl(Position.EAST, Position.WEST, Justification.JUSTIFY_CENTER, 0,0));
 
 		style.addVisualMappingFunction(nodeLabelPosMapping);
+		
+		// Add mapping from boolean value to size
+		final DiscreteMapping<Boolean, Integer> nodeLabelSizeMapping = (DiscreteMapping<Boolean, Integer>) discreteFactory
+				.createVisualMappingFunction("Node Type2", Boolean.class, DVisualLexicon.NODE_LABEL_FONT_SIZE);
+		nodeLabelSizeMapping.putMapValue(true, 13);
+		nodeLabelSizeMapping.putMapValue(false, 22);
+		style.addVisualMappingFunction(nodeLabelSizeMapping);
 
 		final DiscreteMapping<String, Paint> edgeColorMapping = (DiscreteMapping<String, Paint>) discreteFactory
 				.createVisualMappingFunction("interaction", String.class,
@@ -395,6 +397,15 @@ public class CytoscapeJsVisualStyleSerializerTest extends AbstractJsonNetworkVie
 	private final void testNodeMappings(final Set<JsonNode> nodeMappings) {
 		for(JsonNode jnode: nodeMappings) {
 			final String mappingName = jnode.get("selector").asText();
+			System.out.println(mappingName);
+			if(mappingName.contains("Node_Type2")) {
+				if(mappingName.contains("=")) {
+					fail("Wrong boolean handler: = is not supported for boolean mapping.");
+				}
+				
+			} else {
+				
+			}
 		}
 		
 	}
@@ -452,7 +463,7 @@ public class CytoscapeJsVisualStyleSerializerTest extends AbstractJsonNetworkVie
 				edges.add(jNode);
 			}
 		}
-		assertEquals(33, nodes.size());
+		assertEquals(35, nodes.size());
 		assertEquals(2, edges.size());
 
 		mappings.put("node", nodes);
