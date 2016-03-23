@@ -17,15 +17,15 @@
 	</properties>
 
 	<groupId>org.cytoscape</groupId>
-	<artifactId>json-impl</artifactId>
+	<artifactId>json</artifactId>
 	<version>3.4.0-SNAPSHOT</version>
 	<packaging>bundle</packaging>
 	<name>Cytoscape.js JSON importer/exporter app</name>
 	
 	<scm>
-		<connection>scm:git:git://github.com/cytoscape/json-impl.git</connection>
-		<developerConnection>scm:git:git@github.com:cytoscape/json-impl.git</developerConnection>
-		<url>https://github.com/cytoscape/json-impl.git</url>
+		<connection>scm:git:git://github.com/cytoscape/json.git</connection>
+		<developerConnection>scm:git:git@github.com:cytoscape/json.git</developerConnection>
+		<url>https://github.com/cytoscape/json.git</url>
 	</scm>
 
 	<distributionManagement>
