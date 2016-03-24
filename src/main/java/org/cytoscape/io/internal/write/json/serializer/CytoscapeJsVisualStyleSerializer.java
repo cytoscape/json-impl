@@ -369,7 +369,23 @@ public class CytoscapeJsVisualStyleSerializer extends JsonSerializer<VisualStyle
 		colName = matcher.replaceAll("_");
 		final Class<?> colType = mapping.getMappingColumnType();
 
-		for (Object key : mappingPairs.keySet()) {
+		List<Object> orderedMappingKeys = new ArrayList<>();
+		final Set<?> keys = mappingPairs.keySet();
+		
+		// TODO: are there any better way to handle Boolean mapping?
+		if(colType == Boolean.class) {
+			// Re-order to [true, false]
+			if(keys.contains(true) && keys.contains(false)) {
+				orderedMappingKeys.add(Boolean.TRUE);
+				orderedMappingKeys.add(Boolean.FALSE);
+			} else {
+				orderedMappingKeys.addAll(keys);
+			}
+		} else {
+			orderedMappingKeys.addAll(keys);
+		}
+		
+		for (Object key : orderedMappingKeys) {
 			final Object value = convert(mapping.getVisualProperty(), mappingPairs.get(key));
 			jg.writeStartObject();
 
@@ -405,7 +421,7 @@ public class CytoscapeJsVisualStyleSerializer extends JsonSerializer<VisualStyle
 		}
 	}
 	
-
+	
 	/**
 	 * 
 	 * @param vs
