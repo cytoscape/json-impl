@@ -85,7 +85,7 @@ public class CyActivator extends AbstractCyActivator {
 
 		// Use this ID to get this service in other bundles.
 		final Properties jsVisualStyleWriterFactoryProperties = new Properties();
-		jsWriterFactoryProperties.put(ID, "cytoscapejsVisualStyleWriterFactory");
+		jsVisualStyleWriterFactoryProperties.put(ID, "cytoscapejsVisualStyleWriterFactory");
 		registerAllServices(bc, jsonVSWriterFactory, jsVisualStyleWriterFactoryProperties);
 
 		final BasicCyFileFilter webSessionFilter = new BasicCyFileFilter(new String[] { "zip" },
