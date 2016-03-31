@@ -197,12 +197,18 @@ public class CytoscapeJsVisualStyleSerializer extends JsonSerializer<VisualStyle
 			
 			final VisualProperty<?> mappingVp = mapping.getVisualProperty();
 			final CytoscapeJsToken tag = converter.getTag(mappingVp);
-			if (tag == null && mappingVp != BasicVisualLexicon.NODE_SIZE) {
+			if (tag == null 
+					&& mappingVp != BasicVisualLexicon.NODE_SIZE
+					&& mappingVp != BasicVisualLexicon.EDGE_UNSELECTED_PAINT) {
 				continue;
 			} else {
 				if (mapping instanceof DiscreteMapping) {
 					generateDiscreteMappingSection(tag, (DiscreteMapping<?, ?>) mapping, vp, vs, jg);
 				} else if (mapping instanceof ContinuousMapping) {
+					if(tag == null) {
+						continue;
+					}
+					
 					if(mappingVp == BasicVisualLexicon.NODE_SIZE) {
 						// Special case: Node Size should create two types of mappings.
 						generateContinuousMappingSection(CytoscapeJsToken.WIDTH, (ContinuousMapping<?, ?>) mapping, vp, vs, jg);
@@ -412,6 +418,11 @@ public class CytoscapeJsVisualStyleSerializer extends JsonSerializer<VisualStyle
 			if(sizeLocked && mapping.getVisualProperty() == BasicVisualLexicon.NODE_SIZE) {
 				jg.writeObjectField(CytoscapeJsToken.WIDTH.getTag(), value);
 				jg.writeObjectField(CytoscapeJsToken.HEIGHT.getTag(), value);
+			} else if(mapping.getVisualProperty() == BasicVisualLexicon.EDGE_UNSELECTED_PAINT) {
+				jg.writeObjectField(CytoscapeJsToken.LINE_COLOR.getTag(), value);
+				// Always use same color for arrows (for now.  TODO: this is not a complete fix!)
+				jg.writeObjectField(CytoscapeJsToken.TARGET_ARROW_COLOR.getTag(), value);
+				jg.writeObjectField(CytoscapeJsToken.SOURCE_ARROW_COLOR.getTag(), value);
 			} else {
 				jg.writeObjectField(jsTag.getTag(), value);
 			}

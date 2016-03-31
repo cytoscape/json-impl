@@ -464,7 +464,7 @@ public class CytoscapeJsVisualStyleSerializerTest extends AbstractJsonNetworkVie
 			}
 		}
 		assertEquals(35, nodes.size());
-		assertEquals(2, edges.size());
+		assertEquals(4, edges.size());
 
 		mappings.put("node", nodes);
 		mappings.put("edge", edges);
