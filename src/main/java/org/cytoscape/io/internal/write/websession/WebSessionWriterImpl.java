@@ -1,5 +1,6 @@
 package org.cytoscape.io.internal.write.websession;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -7,10 +8,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -30,23 +29,19 @@ import org.cytoscape.work.TaskMonitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.core.JsonGenerationException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class WebSessionWriterImpl extends AbstractTask implements CyWriter, WebSessionWriter {
 
 	private static final Logger logger = LoggerFactory.getLogger(WebSessionWriterImpl.class);
 
 	protected static final String FOLDER_NAME = "web_session";
-	private static final String FILE_LIST_NAME = "filelist";
-	
+
 	protected static final String WEB_RESOURCE_NAME = "web";
-	
-	private static final String JSON_EXT = ".json";
+
+	private static final String JS_EXT = ".js";
 
 	protected File webResourceDirectory;
-	
+
 	protected ZipOutputStream zos;
 	private TaskMonitor taskMonitor;
 
@@ -56,30 +51,26 @@ public class WebSessionWriterImpl extends AbstractTask implements CyWriter, WebS
 	private final CytoscapeJsNetworkWriterFactory cytoscapejsWriterFactory;
 	protected final CyNetworkViewManager viewManager;
 
-	private final Map<String, File> name2fileMap;
-	
 	protected final String exportType;
 	private final Path absResourcePath;
 
-
-	public WebSessionWriterImpl(final OutputStream outputStream, final String exportType, final VizmapWriterFactory jsonStyleWriterFactory,
-			final VisualMappingManager vmm, final CytoscapeJsNetworkWriterFactory cytoscapejsWriterFactory,
-			final CyNetworkViewManager viewManager, final CyApplicationConfiguration appConfig) {
+	public WebSessionWriterImpl(final OutputStream outputStream, final String exportType,
+			final VizmapWriterFactory jsonStyleWriterFactory, final VisualMappingManager vmm,
+			final CytoscapeJsNetworkWriterFactory cytoscapejsWriterFactory, final CyNetworkViewManager viewManager,
+			final CyApplicationConfiguration appConfig) {
 		this.outputStream = outputStream;
 		this.jsonStyleWriterFactory = jsonStyleWriterFactory;
 		this.vmm = vmm;
 		this.cytoscapejsWriterFactory = cytoscapejsWriterFactory;
 		this.viewManager = viewManager;
-		
+
 		this.webResourceDirectory = appConfig.getConfigurationDirectoryLocation();
-		this.name2fileMap = new HashMap<String, File>();
 		this.exportType = exportType;
-		
+
 		final File resourceDir = new File(WEB_RESOURCE_NAME, exportType);
 		File resourceDirectoryFile = new File(webResourceDirectory.getAbsolutePath(), resourceDir.getPath());
 		this.absResourcePath = Paths.get(resourceDirectoryFile.getAbsolutePath());
 	}
-
 
 	@Override
 	public void run(TaskMonitor tm) throws Exception {
@@ -100,25 +91,6 @@ public class WebSessionWriterImpl extends AbstractTask implements CyWriter, WebS
 			}
 		}
 	}
-	
-	/**
-	 * Prepare list of files to be used in the web page.
-	 * 
-	 * This is necessary because JavaScript cannot get contents of a directory
-	 * because of security model.
-	 * @throws IOException 
-	 * @throws JsonMappingException 
-	 * @throws JsonGenerationException 
-	 * 
-	 */
-	private final File prepareFileList(final Map<String, String> fileMap) throws JsonGenerationException, JsonMappingException, IOException {
-		File tempFile = File.createTempFile(FILE_LIST_NAME, ".json");
-		final ObjectMapper mapper = new ObjectMapper();
-		mapper.writeValue(tempFile, fileMap);
-		
-		return tempFile;
-	}
-	
 
 	@Override
 	public void writeFiles(TaskMonitor tm) throws Exception {
@@ -129,31 +101,27 @@ public class WebSessionWriterImpl extends AbstractTask implements CyWriter, WebS
 		tm.setProgress(0.1);
 		tm.setStatusMessage("Saving networks as Cytoscape.js JSON...");
 		final Set<CyNetworkView> netViews = viewManager.getNetworkViewSet();
-		final Collection<File> files = createNetworkViewFiles(netViews);
+		final File networkFile = createNetworkViewFile(netViews);
 		tm.setProgress(0.7);
 		if (cancelled)
 			return;
 
 		// Phase 2: Write a Style JSON.
 		tm.setStatusMessage("Saving Visual Styles as JSON...");
-		File styleFile = createStyleFile();
-		files.add(styleFile);
+		File styleFile = createStyleFile(tm);
 		tm.setProgress(0.9);
-		
+
 		// Phase 3: Prepare list of files
-		name2fileMap.put("style", styleFile);
-		
-		final Map<String, String> nameMap = new HashMap<String, String>();
-		for(String key: name2fileMap.keySet()) {
-			nameMap.put(key, name2fileMap.get(key).getName());
-		}
-		final File fileList = prepareFileList(nameMap);
-		files.add(fileList);
-		
+		Collection<File> fileList = new ArrayList<File>();
+		fileList.add(networkFile);
+		fileList.add(styleFile);
+
 		// Phase 4: Zip everything
+		
 		Path resourceFilePath = Paths.get(webResourceDirectory.getAbsolutePath(), WEB_RESOURCE_NAME, exportType);
-		files.add(resourceFilePath.toFile());
-		zipAll(files);
+		System.out.println(resourceFilePath.toString());
+		fileList.add(resourceFilePath.toFile());
+		zipAll(fileList);
 
 		if (cancelled)
 			return;
@@ -169,29 +137,25 @@ public class WebSessionWriterImpl extends AbstractTask implements CyWriter, WebS
 		zos.close();
 	}
 
-
-	private void addDir(final File[] files,final ZipOutputStream out) throws IOException {
+	private void addDir(final File[] files, final ZipOutputStream out) throws IOException {
 		final byte[] buffer = new byte[4096];
 
-		for (final File file:files) {
+		for (final File file : files) {
 			if (file.isDirectory()) {
 				// Recursively add contents in the directory
 				addDir(file.listFiles(), out);
 				continue;
 			}
-			
+
 			final Path filePath = file.toPath();
-			
+
 			final FileInputStream in = new FileInputStream(file);
-			
+
 			String zipFilePath = null;
-			if(filePath.getFileName().toString().startsWith(FILE_LIST_NAME)) {
-				// This is the data file list JSON file.
-				final Path fileListPath = Paths.get(FOLDER_NAME, FILE_LIST_NAME + JSON_EXT);
-				zipFilePath = fileListPath.toString();
-			} else if(filePath.getParent().toString().contains(absResourcePath.toString()) == false) {
+			if (filePath.getParent().toString().contains(absResourcePath.toString()) == false) {
 				// These are data files (style & network)
-				final Path dataFilePath = Paths.get(FOLDER_NAME, "data", file.getName());
+				String name = file.getName().startsWith("style_") ? "styles.js" : "networks.js";
+				final Path dataFilePath = Paths.get(FOLDER_NAME, "data", name);
 				zipFilePath = dataFilePath.toString();
 			} else {
 				// Web resource files in web directory
@@ -199,16 +163,16 @@ public class WebSessionWriterImpl extends AbstractTask implements CyWriter, WebS
 				Path newResourceFilePath = Paths.get(FOLDER_NAME, relPath.toString());
 				zipFilePath = newResourceFilePath.toString();
 			}
-			
-			// This is for Windows System:  Replace file separator to slash.
+
+			// This is for Windows System: Replace file separator to slash.
 			if (File.separatorChar != '/') {
 				zipFilePath = zipFilePath.replace('\\', '/');
 			}
-			
+
 			// Add normalized path name;
 			final ZipEntry entry = new ZipEntry(zipFilePath);
 			out.putNextEntry(entry);
-			
+
 			int len;
 			while ((len = in.read(buffer)) > 0) {
 				out.write(buffer, 0, len);
@@ -218,46 +182,59 @@ public class WebSessionWriterImpl extends AbstractTask implements CyWriter, WebS
 		}
 	}
 
-
 	/**
 	 * Write a JSON file for Visual Styles.
 	 * 
 	 * @throws Exception
 	 */
-	protected final File createStyleFile() throws Exception {
+	protected final File createStyleFile(TaskMonitor tm) throws Exception {
 		// Write all Styles into one JSON file.
 		final Set<VisualStyle> styles = vmm.getAllVisualStyles();
-		File styleFile = File.createTempFile("style_", JSON_EXT);
-		CyWriter vizmapWriter = jsonStyleWriterFactory.createWriter(new FileOutputStream(styleFile), styles);
+		File styleFile = File.createTempFile("style_", JS_EXT);
+		
+		ByteArrayOutputStream bStream = new ByteArrayOutputStream();
+		
+		CyWriter vizmapWriter = jsonStyleWriterFactory.createWriter(bStream, styles);
+		vizmapWriter.run(tm);
+		
+		FileOutputStream stream = new FileOutputStream(styleFile);
+		stream.write("var styles = ".getBytes());
+		stream.write(bStream.toByteArray());
+		stream.close();
+		
 		vizmapWriter.run(taskMonitor);
 		return styleFile;
 	}
 
-
-	protected Collection<File> createNetworkViewFiles(final Collection<CyNetworkView> netViews) throws Exception {
-		if(netViews.isEmpty()) {
+	protected File createNetworkViewFile(final Collection<CyNetworkView> netViews) throws Exception {
+		if (netViews.isEmpty()) {
 			throw new IllegalArgumentException("No network view.");
 		}
-		
-		final Collection<File> networkFiles = new HashSet<File>();
+
+		final File networkFile = File.createTempFile("networks_", JS_EXT);
+		FileOutputStream stream = new FileOutputStream(networkFile);
+		stream.write("var networks = {".getBytes());
+		int len = 0;
 		for (final CyNetworkView view : netViews) {
-			if (cancelled)
-				return networkFiles;
+			if (cancelled){
+				stream.close();
+				return networkFile;
+			}
 
 			final CyNetwork network = view.getModel();
 			final String networkName = network.getRow(network).get(CyNetwork.NAME, String.class);
-			final Long networkSUID = network.getSUID();
 
-			final String jsonFileName = networkName + "-" + networkSUID.toString();
-
-			File tempFile = File.createTempFile(jsonFileName + "_", JSON_EXT);
-			JSONNetworkViewWriter writer = (JSONNetworkViewWriter) cytoscapejsWriterFactory.createWriter(
-					new FileOutputStream(tempFile), view);
+			ByteArrayOutputStream bStream = new ByteArrayOutputStream();
+			JSONNetworkViewWriter writer = (JSONNetworkViewWriter) cytoscapejsWriterFactory.createWriter(bStream, view);
 			writer.run(taskMonitor);
-			
-			networkFiles.add(tempFile);
-			name2fileMap.put(networkName, tempFile);
+			stream.write(String.format("\"%s\": %s", networkName, bStream.toString()).getBytes());
+			len++;
+			if (len < netViews.size()){
+				stream.write(',');
+			}
 		}
-		return networkFiles;
+		stream.write('}');
+		stream.close();
+		return networkFile;
 	}
 }

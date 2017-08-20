@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Set;
 import java.util.zip.ZipEntry;
@@ -44,8 +45,9 @@ public class ZippedArchiveWriter extends WebSessionWriterImpl {
 		tm.setStatusMessage("Saving networks as Cytoscape.js JSON...");
 
 		final Set<CyNetworkView> viewSet = this.viewManager.getNetworkViewSet();
-		final Collection<File> files = createNetworkViewFiles(viewSet);
-		
+		final File networkFile = createNetworkViewFile(viewSet);
+		Collection<File> files = new ArrayList<File>();
+		files.add(networkFile);
 		tm.setProgress(0.7);
 
 		if (cancelled)
@@ -53,7 +55,7 @@ public class ZippedArchiveWriter extends WebSessionWriterImpl {
 
 		// Phase 2: Write a Style JSON.
 		tm.setStatusMessage("Saving Visual Styles as JSON...");
-		final File styleFile = createStyleFile();
+		final File styleFile = createStyleFile(tm);
 		files.add(styleFile);
 		tm.setProgress(0.9);
 
@@ -98,7 +100,9 @@ public class ZippedArchiveWriter extends WebSessionWriterImpl {
 
 			// Add normalized path name;
 			if(zipFilePath.contains("style_")) {
-				zipFilePath = "style.json";
+				zipFilePath = "styles.js";
+			}else if(zipFilePath.contains("networks_")) {
+				zipFilePath = "networks.js";
 			}
 			
 			final ZipEntry entry = new ZipEntry(zipFilePath);

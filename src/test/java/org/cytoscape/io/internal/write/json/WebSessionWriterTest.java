@@ -136,7 +136,6 @@ public class WebSessionWriterTest {
 		Enumeration<?> enumeration = zipFile.entries();
 		
 		boolean dataDirFlag = false;
-		boolean filelistFlag = false;
 		boolean indexFlag = false;
 		
 		
@@ -153,14 +152,11 @@ public class WebSessionWriterTest {
 			if(name.equals("web_session/index.html")) {
 				indexFlag = true;
 			}
-			if(name.startsWith("web_session/filelist.json")) {
-				filelistFlag = true;
-			}
+			
 			System.out.println(name + ", " + bytes);
 		}
 		zipFile.close();
 		assertTrue(indexFlag);
-		assertTrue(filelistFlag);
 		assertTrue(dataDirFlag);
 	}
 }

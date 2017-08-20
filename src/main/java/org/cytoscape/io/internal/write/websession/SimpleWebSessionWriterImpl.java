@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -43,8 +44,10 @@ public class SimpleWebSessionWriterImpl extends WebSessionWriterImpl {
 		final CyNetworkView view = applicationManager.getCurrentNetworkView();
 		final Set<CyNetworkView> viewSet = new HashSet<CyNetworkView>();
 		viewSet.add(view);
-		final Collection<File> files = createNetworkViewFiles(viewSet);
-		if (files.size() != 1) {
+		final File file = createNetworkViewFile(viewSet);
+		Collection<File> files = new ArrayList<File>();
+		files.add(file);
+		if (viewSet.size() != 1) {
 			throw new IllegalStateException("Simple Web Session Writer takes only one network view.");
 		}
 		tm.setProgress(0.7);
@@ -54,7 +57,7 @@ public class SimpleWebSessionWriterImpl extends WebSessionWriterImpl {
 
 		// Phase 2: Write a Style JSON.
 		tm.setStatusMessage("Saving Visual Styles as JSON...");
-		final File styleFile = createStyleFile();
+		final File styleFile = createStyleFile(tm);
 		files.add(styleFile);
 		tm.setProgress(0.9);
 
@@ -96,9 +99,9 @@ public class SimpleWebSessionWriterImpl extends WebSessionWriterImpl {
 
 				final String fileName;
 				if (currentFileName.startsWith("style")) {
-					fileName = "style.json";
+					fileName = "styles.js";
 				} else {
-					fileName = "network.json";
+					fileName = "networks.js";
 				}
 				final Path dataFilePath = Paths.get(FOLDER_NAME, fileName);
 				zipFilePath = dataFilePath.toString();
