@@ -119,7 +119,6 @@ public class WebSessionWriterImpl extends AbstractTask implements CyWriter, WebS
 		// Phase 4: Zip everything
 		
 		Path resourceFilePath = Paths.get(webResourceDirectory.getAbsolutePath(), WEB_RESOURCE_NAME, exportType);
-		System.out.println(resourceFilePath.toString());
 		fileList.add(resourceFilePath.toFile());
 		zipAll(fileList);
 

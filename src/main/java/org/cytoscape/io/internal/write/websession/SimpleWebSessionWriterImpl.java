@@ -42,6 +42,9 @@ public class SimpleWebSessionWriterImpl extends WebSessionWriterImpl {
 		tm.setProgress(0.1);
 		tm.setStatusMessage("Saving networks as Cytoscape.js JSON...");
 		final CyNetworkView view = applicationManager.getCurrentNetworkView();
+		if (view == null){
+			return;
+		}
 		final Set<CyNetworkView> viewSet = new HashSet<CyNetworkView>();
 		viewSet.add(view);
 		final File file = createNetworkViewFile(viewSet);
