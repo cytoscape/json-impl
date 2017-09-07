@@ -21,6 +21,7 @@ import org.cytoscape.model.CyNetworkFactory;
 import org.cytoscape.model.CyNetworkManager;
 import org.cytoscape.model.subnetwork.CyRootNetworkManager;
 import org.cytoscape.service.util.AbstractCyActivator;
+import org.cytoscape.service.util.CyServiceRegistrar;
 import org.cytoscape.view.model.CyNetworkViewManager;
 import org.cytoscape.view.vizmap.VisualMappingManager;
 import org.osgi.framework.BundleContext;
@@ -32,13 +33,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public class CyActivator extends AbstractCyActivator {
 	
-	public CyActivator() {
-		super();
-	}
-
 	@Override
 	public void start(BundleContext bc) {
 		// Importing Services
+		final CyServiceRegistrar serviceRegistrar = getService(bc, CyServiceRegistrar.class);
 		final CyApplicationConfiguration appConfig = getService(bc, CyApplicationConfiguration.class);
 		final CyVersion cyVersion = getService(bc, CyVersion.class);
 		final StreamUtil streamUtil = getService(bc, StreamUtil.class);
@@ -81,7 +79,7 @@ public class CyActivator extends AbstractCyActivator {
 
 		// For Visual Style
 		final CytoscapeJsVisualStyleWriterFactory jsonVSWriterFactory = new CytoscapeJsVisualStyleWriterFactory(
-				vizmapJsonFilter, applicationManager, cyVersion, viewManager);
+				vizmapJsonFilter, cyVersion, serviceRegistrar);
 
 		// Use this ID to get this service in other bundles.
 		final Properties jsVisualStyleWriterFactoryProperties = new Properties();

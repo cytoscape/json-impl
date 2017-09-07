@@ -10,31 +10,31 @@ import org.cytoscape.io.internal.write.json.serializer.CytoscapeJsVisualStyleMod
 import org.cytoscape.io.write.CyWriter;
 import org.cytoscape.io.write.CyWriterFactory;
 import org.cytoscape.io.write.VizmapWriterFactory;
+import org.cytoscape.model.CyNetwork;
+import org.cytoscape.service.util.CyServiceRegistrar;
 import org.cytoscape.view.model.CyNetworkViewManager;
 import org.cytoscape.view.model.VisualLexicon;
+import org.cytoscape.view.presentation.RenderingEngine;
+import org.cytoscape.view.presentation.RenderingEngineManager;
 import org.cytoscape.view.vizmap.VisualStyle;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Writer factory for Visual Styles.
- * 
  */
 public class CytoscapeJsVisualStyleWriterFactory implements CyWriterFactory, VizmapWriterFactory {
 
 	private final CyFileFilter filter;
-	private final CyApplicationManager applicationManager;
 	private final CyVersion cyVersion;
-	private final CyNetworkViewManager viewManager;
+	private final CyServiceRegistrar serviceRegistrar;
 
 
 	public CytoscapeJsVisualStyleWriterFactory(final CyFileFilter filter, 
-			final CyApplicationManager applicationManager, 
-			final CyVersion cyVersion, final CyNetworkViewManager viewManager) {
+			final CyVersion cyVersion, CyServiceRegistrar serviceRegistrar) {
 		this.filter = filter;
-		this.applicationManager = applicationManager;
 		this.cyVersion = cyVersion;
-		this.viewManager = viewManager;
+		this.serviceRegistrar = serviceRegistrar;
 	}
 
 	@Override
@@ -45,8 +45,13 @@ public class CytoscapeJsVisualStyleWriterFactory implements CyWriterFactory, Viz
 	@Override
 	public CyWriter createWriter(final OutputStream os, final Set<VisualStyle> styles) {
 		// Create Object Mapper here.  This is necessary because it should get correct VisualLexicon.
-		final VisualLexicon lexicon = applicationManager.getCurrentRenderingEngine().getVisualLexicon();
+		RenderingEngine<CyNetwork> engine = serviceRegistrar.getService(CyApplicationManager.class)
+				.getCurrentRenderingEngine();
+		VisualLexicon lexicon = engine != null ? engine.getVisualLexicon()
+				: serviceRegistrar.getService(RenderingEngineManager.class).getDefaultVisualLexicon();
+
 		final ObjectMapper cytoscapeJsMapper = new ObjectMapper();
+		final CyNetworkViewManager viewManager = serviceRegistrar.getService(CyNetworkViewManager.class);
 		cytoscapeJsMapper.registerModule(new CytoscapeJsVisualStyleModule(lexicon, cyVersion, viewManager));
 		return new CytoscapeJsVisualStyleWriter(os, cytoscapeJsMapper, styles, lexicon);
 	}
