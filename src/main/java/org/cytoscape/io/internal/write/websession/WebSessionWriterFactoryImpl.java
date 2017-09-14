@@ -30,11 +30,11 @@ public class WebSessionWriterFactoryImpl implements CyWriterFactory, CySessionWr
 
 	private static final String DEF_WEB_RESOURCE = "web.zip";
 	private static final String WEB_RESOURCE_DIR_NAME = "web";
-	
+	private static final String VERSION_FILE = "webSession-v0.1.0.txt";
+
 	public static final String FULL_EXPORT = "full";
 	public static final String SIMPLE_EXPORT = "simple";
 	public static final String ZIP_EXPORT = "zip";
-	
 
 	private static final int BUFFER_SIZE = 4096;
 
@@ -47,11 +47,10 @@ public class WebSessionWriterFactoryImpl implements CyWriterFactory, CySessionWr
 	private final CyApplicationManager cyApplicationManager;
 	private final String exportType;
 
-
-	public WebSessionWriterFactoryImpl(final VizmapWriterFactory jsonStyleWriterFactory,
-			final VisualMappingManager vmm, final CytoscapeJsNetworkWriterFactory cytoscapejsWriterFactory,
-			final CyNetworkViewManager viewManager, final CyFileFilter filter,
-			final CyApplicationConfiguration appConfig, final CyApplicationManager cyApplicationManager, final String exportType) {
+	public WebSessionWriterFactoryImpl(final VizmapWriterFactory jsonStyleWriterFactory, final VisualMappingManager vmm,
+			final CytoscapeJsNetworkWriterFactory cytoscapejsWriterFactory, final CyNetworkViewManager viewManager,
+			final CyFileFilter filter, final CyApplicationConfiguration appConfig,
+			final CyApplicationManager cyApplicationManager, final String exportType) {
 
 		this.jsonStyleWriterFactory = jsonStyleWriterFactory;
 		this.vmm = vmm;
@@ -69,21 +68,27 @@ public class WebSessionWriterFactoryImpl implements CyWriterFactory, CySessionWr
 		}
 	}
 
+	private boolean isUpToDate(File f){
+		File version = new File(f, VERSION_FILE);
+		return version.exists();
+	}
+
 	private final void extractDefault() throws IOException {
 		final URL source = this.getClass().getClassLoader().getResource(DEF_WEB_RESOURCE);
 
 		final File configLocation = this.appConfig.getConfigurationDirectoryLocation();
 		final File webResource = new File(configLocation, WEB_RESOURCE_DIR_NAME);
-		if (!webResource.exists() || !webResource.isDirectory()) {
-			// Extract default resource
+		
+		if (!webResource.exists() || !webResource.isDirectory() || !isUpToDate(webResource)) {
 			extractResources(source, configLocation);
+			new File(webResource, VERSION_FILE).createNewFile();
 		}
 	}
 
 	public void extractResources(final URL source, final File destDir) throws IOException {
 		destDir.mkdir();
 		final ZipInputStream zipIn = new ZipInputStream(source.openStream());
-
+		
 		ZipEntry entry = zipIn.getNextEntry();
 		while (entry != null) {
 			final String filePath = destDir.getPath() + File.separator + entry.getName();
@@ -102,7 +107,7 @@ public class WebSessionWriterFactoryImpl implements CyWriterFactory, CySessionWr
 	private final void unzipFile(final ZipInputStream zis, final String filePath) throws IOException {
 		final byte[] buffer = new byte[BUFFER_SIZE];
 		final BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(filePath));
-		
+
 		int read = 0;
 		while ((read = zis.read(buffer)) != -1) {
 			bos.write(buffer, 0, read);
@@ -112,15 +117,15 @@ public class WebSessionWriterFactoryImpl implements CyWriterFactory, CySessionWr
 
 	@Override
 	public CyWriter createWriter(OutputStream outputStream, CySession session) {
-		if(exportType.equals(FULL_EXPORT)) {
-			return new WebSessionWriterImpl(outputStream, exportType, jsonStyleWriterFactory, vmm, cytoscapejsWriterFactory,
-				viewManager, appConfig);
-		} else if(exportType.equals(SIMPLE_EXPORT)) {
-			return new SimpleWebSessionWriterImpl(outputStream, exportType, jsonStyleWriterFactory, vmm, cytoscapejsWriterFactory,
-				viewManager, appConfig, cyApplicationManager);
-		} else if(exportType.equals(ZIP_EXPORT)) {
-			return new ZippedArchiveWriter(outputStream, exportType, jsonStyleWriterFactory, vmm, cytoscapejsWriterFactory,
-				viewManager, appConfig, cyApplicationManager);
+		if (exportType.equals(FULL_EXPORT)) {
+			return new WebSessionWriterImpl(outputStream, exportType, jsonStyleWriterFactory, vmm,
+					cytoscapejsWriterFactory, viewManager, appConfig);
+		} else if (exportType.equals(SIMPLE_EXPORT)) {
+			return new SimpleWebSessionWriterImpl(outputStream, exportType, jsonStyleWriterFactory, vmm,
+					cytoscapejsWriterFactory, viewManager, appConfig, cyApplicationManager);
+		} else if (exportType.equals(ZIP_EXPORT)) {
+			return new ZippedArchiveWriter(outputStream, exportType, jsonStyleWriterFactory, vmm,
+					cytoscapejsWriterFactory, viewManager, appConfig, cyApplicationManager);
 		} else {
 			throw new IllegalArgumentException("Invalid export type.");
 		}

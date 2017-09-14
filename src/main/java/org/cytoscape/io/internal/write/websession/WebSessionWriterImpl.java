@@ -10,6 +10,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -97,18 +99,26 @@ public class WebSessionWriterImpl extends AbstractTask implements CyWriter, WebS
 		// Phase 0: Prepare local temp files. This is necessary because
 		// Jackson library forces to close the stream!
 
-		// Phase 1: Write all network files as Cytoscape.js-style JSON
+		// Phase 1: Write all network files as Cytoscape.js-style javascript
 		tm.setProgress(0.1);
-		tm.setStatusMessage("Saving networks as Cytoscape.js JSON...");
+		tm.setStatusMessage("Saving networks as Cytoscape.js javascript...");
 		final Set<CyNetworkView> netViews = viewManager.getNetworkViewSet();
 		final File networkFile = createNetworkViewFile(netViews);
 		tm.setProgress(0.7);
 		if (cancelled)
 			return;
 
-		// Phase 2: Write a Style JSON.
-		tm.setStatusMessage("Saving Visual Styles as JSON...");
-		File styleFile = createStyleFile(tm);
+		// Phase 2: Write a Style javascript.
+		tm.setStatusMessage("Saving Visual Styles as javascript...");
+		ArrayList<VisualStyle> styles = new ArrayList<VisualStyle>();
+		styles.add(vmm.getCurrentVisualStyle());
+		for (VisualStyle vs : vmm.getAllVisualStyles()){
+			if (vs == styles.get(0))
+				continue;
+			styles.add(vs);
+		}
+		
+		File styleFile = createStyleFile(tm, new HashSet<VisualStyle>(styles));
 		tm.setProgress(0.9);
 
 		// Phase 3: Prepare list of files
@@ -182,13 +192,12 @@ public class WebSessionWriterImpl extends AbstractTask implements CyWriter, WebS
 	}
 
 	/**
-	 * Write a JSON file for Visual Styles.
+	 * Write a javascript file for Visual Styles.
 	 * 
 	 * @throws Exception
 	 */
-	protected final File createStyleFile(TaskMonitor tm) throws Exception {
+	protected final File createStyleFile(TaskMonitor tm, Set<VisualStyle> styles) throws Exception {
 		// Write all Styles into one JSON file.
-		final Set<VisualStyle> styles = vmm.getAllVisualStyles();
 		File styleFile = File.createTempFile("style_", JS_EXT);
 		
 		ByteArrayOutputStream bStream = new ByteArrayOutputStream();

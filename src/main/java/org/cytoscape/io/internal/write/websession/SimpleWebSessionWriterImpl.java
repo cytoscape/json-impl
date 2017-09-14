@@ -20,12 +20,14 @@ import org.cytoscape.io.write.VizmapWriterFactory;
 import org.cytoscape.view.model.CyNetworkView;
 import org.cytoscape.view.model.CyNetworkViewManager;
 import org.cytoscape.view.vizmap.VisualMappingManager;
+import org.cytoscape.view.vizmap.VisualStyle;
 import org.cytoscape.work.TaskMonitor;
 
 public class SimpleWebSessionWriterImpl extends WebSessionWriterImpl {
 
 	private final CyApplicationManager applicationManager;
 	private Path resourceFilePath;
+	private VisualMappingManager vmm;
 
 	public SimpleWebSessionWriterImpl(OutputStream outputStream, String exportType,
 			VizmapWriterFactory jsonStyleWriterFactory, VisualMappingManager vmm,
@@ -33,14 +35,15 @@ public class SimpleWebSessionWriterImpl extends WebSessionWriterImpl {
 			CyApplicationConfiguration appConfig, final CyApplicationManager applicationManager) {
 		super(outputStream, exportType, jsonStyleWriterFactory, vmm, cytoscapejsWriterFactory, viewManager, appConfig);
 		this.applicationManager = applicationManager;
-	}
+		this.vmm = vmm;
+	}	
 
 	@Override
 	public void writeFiles(TaskMonitor tm) throws Exception {
 
-		// Phase 1: Write current network files as Cytoscape.js-style JSON
+		// Phase 1: Write current network files as Cytoscape.js-style JS
 		tm.setProgress(0.1);
-		tm.setStatusMessage("Saving networks as Cytoscape.js JSON...");
+		tm.setStatusMessage("Saving networks as Cytoscape.js JS...");
 		final CyNetworkView view = applicationManager.getCurrentNetworkView();
 		if (view == null){
 			return;
@@ -58,9 +61,11 @@ public class SimpleWebSessionWriterImpl extends WebSessionWriterImpl {
 		if (cancelled)
 			return;
 
-		// Phase 2: Write a Style JSON.
-		tm.setStatusMessage("Saving Visual Styles as JSON...");
-		final File styleFile = createStyleFile(tm);
+		// Phase 2: Write a Style JS.
+		tm.setStatusMessage("Saving Visual Styles as JS...");
+		Set<VisualStyle> styles = new HashSet<VisualStyle>();
+		styles.add(vmm.getCurrentVisualStyle());
+		final File styleFile = createStyleFile(tm, styles);
 		files.add(styleFile);
 		tm.setProgress(0.9);
 
