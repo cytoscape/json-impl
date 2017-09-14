@@ -1,5 +1,6 @@
 package org.cytoscape.io.internal.write.json;
 
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -27,6 +28,7 @@ import org.cytoscape.io.internal.write.json.serializer.CytoscapeJsNetworkModule;
 import org.cytoscape.io.internal.write.websession.WebSessionWriterFactoryImpl;
 import org.cytoscape.io.internal.write.websession.WebSessionWriterImpl;
 import org.cytoscape.io.write.VizmapWriterFactory;
+import org.cytoscape.service.util.CyServiceRegistrar;
 import org.cytoscape.view.model.CyNetworkView;
 import org.cytoscape.view.model.CyNetworkViewManager;
 import org.cytoscape.view.vizmap.VisualMappingManager;
@@ -35,15 +37,13 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-
-import static org.junit.Assert.*;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class WebSessionWriterTest {
 
 	private WebSessionWriterImpl writer;
 
+	private CyServiceRegistrar serviceRegistrar;
 	private CyApplicationConfiguration appConfig;
 	private VisualMappingManager vmm;
 
@@ -90,7 +90,7 @@ public class WebSessionWriterTest {
 
 	@Before
 	public void setUp() throws Exception {
-		this.appConfig = mock(CyApplicationConfiguration.class);
+		appConfig = mock(CyApplicationConfiguration.class);
 		when(appConfig.getConfigurationDirectoryLocation()).thenReturn(new File("target"));
 
 		this.appManager = mock(CyApplicationManager.class, RETURNS_DEEP_STUBS);
@@ -107,7 +107,12 @@ public class WebSessionWriterTest {
 		final Set<CyNetworkView> views = new HashSet<CyNetworkView>();
 		views.add(view);
 
-		this.jsonStyleWriterFactory = new CytoscapeJsVisualStyleWriterFactory(filter, appManager, cyVersion, viewManager);
+		serviceRegistrar = mock(CyServiceRegistrar.class);
+		when(serviceRegistrar.getService(CyNetworkViewManager.class)).thenReturn(viewManager);
+		when(serviceRegistrar.getService(CyApplicationManager.class)).thenReturn(appManager);
+		when(serviceRegistrar.getService(CyVersion.class)).thenReturn(cyVersion);
+		
+		this.jsonStyleWriterFactory = new CytoscapeJsVisualStyleWriterFactory(filter, cyVersion, serviceRegistrar);
 		when(viewManager.getNetworkViewSet()).thenReturn(views);
 	}
 
