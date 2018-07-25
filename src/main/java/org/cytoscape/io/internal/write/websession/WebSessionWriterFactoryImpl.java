@@ -30,7 +30,7 @@ public class WebSessionWriterFactoryImpl implements CyWriterFactory, CySessionWr
 
 	private static final String DEF_WEB_RESOURCE = "web.zip";
 	private static final String WEB_RESOURCE_DIR_NAME = "web";
-	private static final String VERSION_FILE = "webSession-v0.1.0.txt";
+	private static final String VERSION_FILE = "webSession-v0.2.0.txt";
 
 	public static final String FULL_EXPORT = "full";
 	public static final String SIMPLE_EXPORT = "simple";
