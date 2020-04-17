@@ -21,13 +21,14 @@ import java.util.Set;
 
 import org.cytoscape.application.CyVersion;
 import org.cytoscape.ding.DVisualLexicon;
-import org.cytoscape.ding.Justification;
-import org.cytoscape.ding.ObjectPosition;
-import org.cytoscape.ding.Position;
+import org.cytoscape.view.presentation.property.values.ObjectPosition;
+import org.cytoscape.view.presentation.property.values.Justification;
+import org.cytoscape.view.presentation.property.values.Position;
+
 import org.cytoscape.ding.customgraphics.CustomGraphicsManager;
 import org.cytoscape.ding.dependency.EdgeColorDependencyFactory;
 import org.cytoscape.ding.dependency.NodeSizeDependencyFactory;
-import org.cytoscape.ding.impl.ObjectPositionImpl;
+
 import org.cytoscape.event.CyEventHelper;
 import org.cytoscape.io.internal.write.json.serializer.CytoscapeJsVisualStyleModule;
 import org.cytoscape.io.internal.write.json.serializer.CytoscapeJsVisualStyleSerializer;
@@ -76,7 +77,6 @@ public class CytoscapeJsVisualStyleSerializerTest extends AbstractJsonNetworkVie
 
 	private CyNetworkViewManager viewManager;
 	
-
 	
 	@Before
 	public void setUp() throws Exception {
@@ -95,11 +95,14 @@ public class CytoscapeJsVisualStyleSerializerTest extends AbstractJsonNetworkVie
 		final ValueSerializerManager manager = new ValueSerializerManager();
 		serializer = new CytoscapeJsVisualStyleSerializer(manager, lexicon, cyVersion, viewManager);
 
-		final CyEventHelper eventHelper = mock(CyEventHelper.class);
-		passthroughFactory = new PassthroughMappingFactory(eventHelper);
-		discreteFactory = new DiscreteMappingFactory(eventHelper);
-		continuousFactory = new ContinuousMappingFactory(eventHelper);
-
+		final CyServiceRegistrar cyServiceRegistrar = mock(CyServiceRegistrar.class);
+		when(cyServiceRegistrar.getService(CyEventHelper.class)).thenReturn(mock(CyEventHelper.class));
+		
+		
+		passthroughFactory = new PassthroughMappingFactory(cyServiceRegistrar);
+		discreteFactory = new DiscreteMappingFactory(cyServiceRegistrar);
+		continuousFactory = new ContinuousMappingFactory(cyServiceRegistrar);
+		
 		style = generateVisualStyle(lexicon);
 		setDefaults();
 		setMappings();
@@ -150,7 +153,7 @@ public class CytoscapeJsVisualStyleSerializerTest extends AbstractJsonNetworkVie
 		style.setDefaultValue(BasicVisualLexicon.NODE_LABEL_FONT_FACE, new Font("Helvetica", Font.PLAIN, 12));
 		style.setDefaultValue(BasicVisualLexicon.NODE_LABEL_TRANSPARENCY, 122);
 		style.setDefaultValue(DVisualLexicon.NODE_LABEL_POSITION,
-				new ObjectPositionImpl(Position.NORTH_EAST, Position.CENTER, Justification.JUSTIFY_CENTER, 0,0));
+				new ObjectPosition(Position.NORTH_EAST, Position.CENTER, Justification.JUSTIFY_CENTER, 0,0));
 
 		// For Selected
 		style.setDefaultValue(BasicVisualLexicon.NODE_SELECTED_PAINT, Color.RED);
@@ -253,8 +256,8 @@ public class CytoscapeJsVisualStyleSerializerTest extends AbstractJsonNetworkVie
 
 		final DiscreteMapping<String, ObjectPosition> nodeLabelPosMapping = (DiscreteMapping<String, ObjectPosition>) discreteFactory
 				.createVisualMappingFunction("Node Type", String.class, DVisualLexicon.NODE_LABEL_POSITION);
-		nodeLabelPosMapping.putMapValue("gene", new ObjectPositionImpl(Position.SOUTH, Position.NORTH_WEST, Justification.JUSTIFY_CENTER, 0,0));
-		nodeLabelPosMapping.putMapValue("protein", new ObjectPositionImpl(Position.EAST, Position.WEST, Justification.JUSTIFY_CENTER, 0,0));
+		nodeLabelPosMapping.putMapValue("gene", new ObjectPosition(Position.SOUTH, Position.NORTH_WEST, Justification.JUSTIFY_CENTER, 0,0));
+		nodeLabelPosMapping.putMapValue("protein", new ObjectPosition(Position.EAST, Position.WEST, Justification.JUSTIFY_CENTER, 0,0));
 
 		style.addVisualMappingFunction(nodeLabelPosMapping);
 		
